@@ -1,0 +1,37 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  ACR_REGISTRY: your-acr-registry.azurecr.io
+  ACR_REPOSITORY: your-acr-repository
+  IMAGE_NAME: your-docker-image-name
+  IMAGE_TAG: latest
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Create ACR Repository
+        run: az acr repository create --name ${{ env.ACR_REGISTRY }} --repository ${{ env.ACR_REPOSITORY }} --image-tags ${{ env.IMAGE_TAG }} --output none
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
